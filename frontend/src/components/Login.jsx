@@ -30,9 +30,8 @@ const Login = () => {
       const response = await axios.post('http://localhost:8080/api/auth/login', formData);
       localStorage.setItem('user', JSON.stringify(response.data));
       
-      // Navigate to /study on successful login or to the page the user was trying to access
-      const from = location.state?.from?.pathname || '/study';
-      navigate(from);
+      // Navigate to home page on successful login
+      navigate('/', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       console.error('Response data:', err.response?.data);

@@ -1,26 +1,39 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 // import Database from './Database'
-
 import PaperAnalysis from './pages/PaperAnalysis'
-
 import Login from './components/Login'
 import Register from './components/Register'
 import Dashboard from './pages/Dashboard'
+import SqlPractice from './pages/SqlPractice'
+
+const ProtectedRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
 
 const App = () => {
-  const isAuthenticated = localStorage.getItem('user')
-
   return (
     <Router>
       <Routes>
         {/* <Route path="/database" element={<Database />} /> */}
-        <Route path="/" element=<Dashboard/> />
-        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/study" />} />
-        <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/study" />} />
-        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-        {/* <Route path="/database" element={isAuthenticated ? <DatabaseViewer /> : <Navigate to="/login" />} /> */}
-        {/* <Route path="/" element={<Navigate to="/" />} /> */}
-        <Route path="/study" element={<PaperAnalysis />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/study" element={
+          <ProtectedRoute>
+            <PaperAnalysis />
+          </ProtectedRoute>
+        } />
+        <Route path="/sql-practice" element={
+          <ProtectedRoute>
+            <SqlPractice />
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   )

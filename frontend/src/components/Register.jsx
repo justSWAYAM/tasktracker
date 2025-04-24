@@ -38,26 +38,29 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
       });
       
-      if (response.data.result === 'success') {
-        localStorage.setItem('user', JSON.stringify(response.data.data));
-        navigate('/study');
+      console.log('Registration response:', response.data);
+      
+      if (response.status === 200) {
+        localStorage.setItem('user', JSON.stringify({
+          name: formData.name,
+          email: formData.email
+        }));
+        navigate('/', { replace: true });
       } else {
-        setError(response.data.message || 'Registration failed');
+        throw new Error(response.data?.message || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration error:', err);
+      console.error('Error response:', err.response?.data);
       
       if (err.response?.status === 409) {
         setError('Email already exists');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
-        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        setError(err.message || 'Registration failed. Please try again.');
       }
     } finally {
       setIsLoading(false);

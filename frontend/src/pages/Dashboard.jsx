@@ -5,29 +5,17 @@ import ReactFlow, { Background } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 const Dashboard = () => {
-  const [subjects, setSubjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user')
-    setIsLoggedIn(!!user)
-
-    const fetchSubjects = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/subjects')
-        setSubjects(response.data.data || [])
-        setLoading(false)
-      } catch (error) {
-        console.error('Error fetching subjects:', error)
-        setLoading(false)
-      }
-    }
-
-    fetchSubjects()
-  }, [])
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    setIsLoggedIn(!!storedUser);
+    setUser(storedUser);
+    setLoading(false);
+  }, []);
 
   const handleGetStarted = () => {
     if (isLoggedIn) {
@@ -49,24 +37,21 @@ const Dashboard = () => {
       title: 'PYQ Analyzer',
       description: 'Analyze previous year questions and patterns',
       icon: '📊',
-      path: isLoggedIn ? '/pyq-analyzer' : '/login',
-      state: isLoggedIn ? {} : { from: { pathname: '/pyq-analyzer' } }
+      path: isLoggedIn ? '/study' : '/login',
+      state: isLoggedIn ? {} : { from: { pathname: '/study' } }
     },
     {
-      title: 'Study Planner',
-      description: 'Create and manage your study schedule',
-      icon: '📅',
-      path: isLoggedIn ? '/study-planner' : '/login',
-      state: isLoggedIn ? {} : { from: { pathname: '/study-planner' } }
-    },
-    {
-      title: 'Resources',
-      description: 'Access study materials and resources',
-      icon: '📖',
-      path: isLoggedIn ? '/resources' : '/login',
-      state: isLoggedIn ? {} : { from: { pathname: '/resources' } }
+      title: 'SQL Practice',
+      description: 'Practice SQL queries with interactive exercises',
+      icon: '💾',
+      path: isLoggedIn ? '/sql-practice' : '/login',
+      state: isLoggedIn ? {} : { from: { pathname: '/sql-practice' } }
     }
   ]
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="min-h-screen relative bg-[#293241]">
@@ -77,6 +62,7 @@ const Dashboard = () => {
             onClick={() => {
               localStorage.removeItem('user');
               setIsLoggedIn(false);
+              setUser(null);
               navigate('/');
             }}
             className="text-[#98C1D9] hover:text-[#EE6C4D] px-4 py-2"
@@ -129,10 +115,10 @@ const Dashboard = () => {
         <div className="relative container mx-auto px-6">
           <div className="max-w-4xl">
             <h1 className="text-6xl font-bold text-[#E0FBFC] mb-6 leading-tight">
-              Master Your Subjects with <span className="text-[#EE6C4D]">Last Minute Study Helper</span>
+              Welcome back, <span className="text-[#EE6C4D]">{user?.name || 'Guest'}</span>
             </h1>
             <p className="text-xl text-[#98C1D9] mb-8">
-              Your all-in-one solution for effective last-minute studying. Access quizzes, previous year questions, and study resources all in one place.
+              Master Your Tasks with <span className="text-[#EE6C4D]">Task Tracker</span>
             </p>
             <button
               onClick={handleGetStarted}
@@ -145,61 +131,6 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Featured Subjects */}
-      <div className="container mx-auto px-6 py-16">
-        <h2 className="text-4xl font-bold text-[#E0FBFC] mb-4">Featured Subjects</h2>
-        <div className="w-24 h-1 bg-[#EE6C4D] mb-12 rounded-full"></div>
-        
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, index) => (
-              <div key={index} className="bg-[#3D5A80]/30 rounded-xl p-6 animate-pulse">
-                <div className="h-48 bg-[#3D5A80]/50 rounded-xl mb-4"></div>
-                <div className="h-6 bg-[#3D5A80]/50 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-[#3D5A80]/50 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {subjects.map((subject) => (
-              <div
-                key={subject.id}
-                onClick={() => {
-                  if (isLoggedIn) {
-                    navigate(`/subjects/${subject.id}`);
-                  } else {
-                    navigate('/login', { state: { from: { pathname: `/subjects/${subject.id}` } } });
-                  }
-                }}
-                className="group bg-[#3D5A80]/20 backdrop-blur-lg rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border border-[#3D5A80]/30 hover:border-[#EE6C4D] cursor-pointer"
-              >
-                <div className="relative h-48 bg-gradient-to-br from-[#3D5A80] to-[#293241]">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-5xl transform group-hover:scale-110 transition-transform">{subject.icon || '📚'}</span>
-                  </div>
-                  <div className="absolute bottom-0 right-0 w-24 h-24 bg-[#EE6C4D]/10 rounded-tl-full"></div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-2xl font-semibold text-[#E0FBFC] mb-2 group-hover:text-[#EE6C4D] transition-colors">
-                    {subject.name}
-                  </h3>
-                  <p className="text-[#98C1D9] mb-4">{subject.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#98C1D9]/70">
-                      {subject.questionCount || 0} Questions
-                    </span>
-                    <span className="text-[#EE6C4D] hover:text-[#e85c3a] group-hover:translate-x-1 transition-transform">
-                      {isLoggedIn ? 'Start Learning →' : 'Sign in to access →'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Features Section */}
@@ -218,28 +149,30 @@ const Dashboard = () => {
         <div className="container mx-auto px-6 relative z-10">
           <h2 className="text-4xl font-bold text-[#E0FBFC] mb-4 text-center">How It Works</h2>
           <div className="w-24 h-1 bg-[#EE6C4D] mx-auto mb-12 rounded-full"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <Link
-                key={index}
-                to={feature.path}
-                state={feature.state}
-                className="group bg-[#3D5A80]/20 backdrop-blur-lg rounded-xl p-8 hover:bg-[#3D5A80]/30 transition-all duration-300 border border-[#3D5A80]/30 hover:border-[#EE6C4D]"
-              >
-                <div className="w-16 h-16 flex items-center justify-center bg-[#98C1D9]/10 rounded-2xl mb-6 text-4xl group-hover:bg-[#EE6C4D]/10 transition-colors">
-                  <span className="transform group-hover:scale-110 transition-transform">{feature.icon}</span>
-                </div>
-                <h3 className="text-2xl font-semibold text-[#E0FBFC] mb-4 group-hover:text-[#EE6C4D] transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-[#98C1D9]">{feature.description}</p>
-                <div className="mt-6 w-8 h-8 rounded-full bg-[#3D5A80]/30 flex items-center justify-center group-hover:bg-[#EE6C4D] transition-colors">
-                  <svg className="w-4 h-4 text-[#E0FBFC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                  </svg>
-                </div>
-              </Link>
-            ))}
+          <div className="flex justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl">
+              {features.map((feature, index) => (
+                <Link
+                  key={index}
+                  to={feature.path}
+                  state={feature.state}
+                  className="group bg-[#3D5A80]/20 backdrop-blur-lg rounded-xl p-8 hover:bg-[#3D5A80]/30 transition-all duration-300 border border-[#3D5A80]/30 hover:border-[#EE6C4D]"
+                >
+                  <div className="w-16 h-16 flex items-center justify-center bg-[#98C1D9]/10 rounded-2xl mb-6 text-4xl group-hover:bg-[#EE6C4D]/10 transition-colors">
+                    <span className="transform group-hover:scale-110 transition-transform">{feature.icon}</span>
+                  </div>
+                  <h3 className="text-2xl font-semibold text-[#E0FBFC] mb-4 group-hover:text-[#EE6C4D] transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-[#98C1D9]">{feature.description}</p>
+                  <div className="mt-6 w-8 h-8 rounded-full bg-[#3D5A80]/30 flex items-center justify-center group-hover:bg-[#EE6C4D] transition-colors">
+                    <svg className="w-4 h-4 text-[#E0FBFC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

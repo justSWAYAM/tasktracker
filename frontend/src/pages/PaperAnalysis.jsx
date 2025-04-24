@@ -1,7 +1,48 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import ReactFlow, { Background } from 'reactflow'
 import 'reactflow/dist/style.css'
+import { GoogleGenAI } from "@google/genai";
+
+// Replace 'YOUR_API_KEY' with your actual Google AI API key
+const ai = new GoogleGenAI({
+  apiKey: 'AIzaSyB8WJOZLwF9qOcCSLVlFs1qmlDcosLq2LY'
+});
+
+async function main(subject, semester, university) {
+  const prompt = `Analyze the following academic information and generate relevant study material from mumbai univeristy
+  do not give any other text in response besides the json formatted text nothign else start directly from  question and dont write any starting or ending line for the response or any greeting also should not be there
+  :
+    Subject: ${subject}
+    Semester: ${semester}
+    University: ${university}
+    
+    Please provide:
+    1. Key topics to focus on
+    2. Important concepts
+    3. Study recommendations
+    4. Common exam patterns
+    
+    only return the response in json format
+     {
+          id: 1,
+          question: "",
+          answer: "",
+          difficulty: "",
+          importanceScore: 
+        },
+        
+        this is a sample structure striclt follow this structure return only the json format
+        return only questions that come in exam nothign else this should be straightforward as much as possible`;
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
+  return response.text;
+ 
+}
+
 
 const PaperAnalysis = () => {
   const [paperLinks, setPaperLinks] = useState(['', '', '', '', ''])
@@ -12,6 +53,14 @@ const PaperAnalysis = () => {
   const [questions, setQuestions] = useState([])
   const [selectedQuestion, setSelectedQuestion] = useState(null)
   const [showAnswer, setShowAnswer] = useState(false)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   const handlePaperLinkChange = (index, value) => {
     const newPaperLinks = [...paperLinks]
@@ -23,49 +72,24 @@ const PaperAnalysis = () => {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate API call to analyze papers
-    setTimeout(() => {
-      const mockQuestions = [
-        {
-          id: 1,
-          question: "Explain the significance of vector calculus in electromagnetic field theory.",
-          answer: "Vector calculus plays a crucial role in electromagnetic field theory as it provides the mathematical framework to describe the behavior of electric and magnetic fields in space. Maxwell's equations, which are the fundamental equations of electromagnetism, are expressed using vector calculus operations like divergence, gradient, and curl. This mathematical approach allows us to understand how electromagnetic fields propagate through space and interact with matter.",
-          difficulty: "Medium",
-          importanceScore: 95
-        },
-        {
-          id: 2,
-          question: "Compare and contrast synchronous and asynchronous sequential circuits.",
-          answer: "Synchronous sequential circuits operate based on a global clock signal that synchronizes all state transitions, while asynchronous sequential circuits change states in response to input changes without relying on a clock. Synchronous circuits are easier to design and test due to their predictable timing, but they may consume more power and have clock distribution challenges. Asynchronous circuits can be more power-efficient and don't suffer from clock skew issues, but they're harder to design, test, and can experience hazards and race conditions.",
-          difficulty: "Hard",
-          importanceScore: 90
-        },
-        {
-          id: 3,
-          question: "Discuss the principles of packet switching in computer networks.",
-          answer: "Packet switching is a method where data is broken into small chunks called packets, which are transmitted individually through the network and reassembled at the destination. Each packet contains addressing information and can take different routes. This approach enables efficient use of network resources through statistical multiplexing, provides resilience to network failures, and allows for fair sharing of network capacity among multiple users. Key principles include connectionless service, store-and-forward transmission, dynamic routing, and packet sequencing.",
-          difficulty: "Medium",
-          importanceScore: 88
-        },
-        {
-          id: 4,
-          question: "Describe the process of memory allocation in operating systems.",
-          answer: "Memory allocation in operating systems involves assigning portions of memory to processes upon request. The main strategies include: 1) Contiguous allocation, where each process gets a single continuous block of memory; 2) Paging, which divides physical memory into fixed-size frames and logical memory into pages; 3) Segmentation, which divides memory into logical segments of varying sizes. The OS maintains data structures to track free and allocated memory regions. Memory allocation must handle fragmentation issues, optimize space utilization, and ensure memory protection between processes.",
-          difficulty: "Medium",
-          importanceScore: 85
-        },
-        {
-          id: 5,
-          question: "Analyze the time complexity of quicksort algorithm in best, average, and worst cases.",
-          answer: "Quicksort has different time complexities depending on the scenario: Best case: O(n log n) occurs when the pivot element consistently divides the array into roughly equal halves, resulting in balanced partitioning. Average case: O(n log n) applies to random data where partitioning is reasonably balanced most of the time. Worst case: O(n²) happens when the array is already sorted (or reverse sorted) and the first/last element is chosen as pivot, causing highly unbalanced partitions. Space complexity is O(log n) for the recursive call stack in the average case, but can be O(n) in the worst case.",
-          difficulty: "Hard",
-          importanceScore: 82
-        }
-      ]
-      
-      setQuestions(mockQuestions)
-      setIsLoading(false)
-    }, 2000)
+    try {
+      const analysis = await main(subject, degree, university);
+      // Extract JSON content from the response text
+      const jsonMatch = analysis.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch && jsonMatch[1]) {
+        const jsonString = jsonMatch[1].trim();
+        const parsedQuestions = JSON.parse(jsonString);
+        setQuestions(parsedQuestions);
+      } else {
+        console.error('No valid JSON found in response');
+        // You might want to show an error message to the user here
+      }
+    } catch (error) {
+      console.error('Error analyzing papers:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleQuestionClick = (question) => {
@@ -159,17 +183,16 @@ const PaperAnalysis = () => {
                 
                 <div className="mb-6">
                   <label className="block text-[#98C1D9] mb-2">Paper Links (PDF)</label>
-                  <p className="text-sm text-[#98C1D9]/70 mb-4">Add up to 5 links to previous year papers</p>
+                  <p className="text-sm text-[#98C1D9]/70 mb-4">Add up to 5 links to previous year papers (Optional)</p>
                   
                   {paperLinks.map((link, index) => (
                     <div key={index} className="mb-3">
                       <input
                         type="url"
                         className="w-full bg-[#293241] border border-[#3D5A80] rounded-lg px-4 py-2 text-[#E0FBFC] focus:outline-none focus:border-[#EE6C4D]"
-                        placeholder={`Paper ${index + 1} URL`}
+                        placeholder={`Paper ${index + 1} URL (Optional)`}
                         value={link}
                         onChange={(e) => handlePaperLinkChange(index, e.target.value)}
-                        required={index === 0} // Only the first link is required
                       />
                     </div>
                   ))}
